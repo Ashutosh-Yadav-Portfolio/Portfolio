@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SETH.WORKS | Visual Surge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020202;
+            color: white;
+            cursor: none; /* Hide default cursor */
+            overflow-x: hidden;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: #020202; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        /* Animation Classes */
+        .ease-expo { transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        /* Observer Animation State */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .animate-on-scroll.is-visible {
+            opacity: 1 !important;
+            transform: translate(0, 0) !important;
+        }
+
+        /* Heart Animation */
+        @keyframes heart-float {
+            0% { transform: translate(-50%, -50%) rotate(var(--rot)) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -150px) rotate(var(--rot)) scale(2); opacity: 0; }
+        }
+        .animate-heart-float {
+            animation: heart-float 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Hero Reveal */
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-reveal { animation: reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-reveal-delay-1 { opacity: 0; animation: reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; }
+
+        /* Modal Animation */
+        @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); filter: blur(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+        .animate-modal-in { animation: modal-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 0.4s ease forwards; }
+
+        /* Optical Lens Mask for Edge Blur */
+        .lens-vignette-mask {
+            -webkit-mask-image: radial-gradient(circle, transparent 40%, black 100%);
+            mask-image: radial-gradient(circle, transparent 40%, black 100%);
+            backdrop-filter: blur(4px);
+        }
+        
+        /* SIMPLE HOVER STATE (Zoom Removed) */
+        .hover-trigger {
+            display: inline-block;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        .hover-trigger:hover {
+            opacity: 0.7; /* Simple opacity fade */
+        }
+
+        /* Mobile Cursor Reset */
+        @media (hover: none) and (pointer: coarse) {
+            body { cursor: auto; }
+            #cursor { display: none !important; }
+        }
+    </style>
+</head>
+<body class="selection:bg-white selection:text-black">
+
+    <!-- Custom Cursor Container -->
+    <div id="cursor" class="fixed top-0 left-0 pointer-events-none z-[10000] hidden md:block transition-transform duration-100 ease-out will-change-transform" style="transform: translate(-100px, -100px);">
+        <!-- Cursor Dot: Logic updated in JS -->
+        <div id="cursor-dot" class="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 rounded-full flex items-center justify-center w-4 h-4 bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+            <i data-lucide="arrow-up-right" class="text-white w-5 h-5 hidden opacity-0 transition-opacity duration-300" id="cursor-icon"></i>
+        </div>
+    </div>
+
+    <!-- Click Particles Container -->
+    <div id="particles-container" class="fixed inset-0 pointer-events-none z-[9999]"></div>
+
+    <!-- Global Background Grid -->
+    <div class="fixed inset-0 z-0 opacity-[0.05] pointer-events-none">
+        <div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+        <div class="absolute top-1/4 left-0 w-full h-[1px] bg-blue-500/20"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed w-full z-[100] transition-all duration-700 py-6 md:py-8 bg-transparent">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12 flex justify-between items-center">
+            <div class="text-xl md:text-2xl font-black tracking-tighter uppercase flex items-center gap-2 group cursor-pointer hover-trigger">
+                <div class="w-8 h-8 bg-white text-black flex items-center justify-center rounded-sm font-black group-hover:scale-110 transition-transform">S</div>
+                Seth.Works
+            </div>
+            
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex gap-10 text-[9px] font-black uppercase tracking-[0.4em] text-white/30">
+                <a href="#archives" class="hover:text-white transition-all hover-trigger">Work</a>
+                <a href="#method" class="hover:text-white transition-all hover-trigger">Method</a>
+                <a href="#about" class="hover:text-white transition-all hover-trigger">About</a>
+                <a href="#contact" class="hover:text-white transition-all hover-trigger">Contact</a>
+            </div>
+
+            <!-- NAVBAR FREELANCE STATUS & BUTTON -->
+            <div class="hidden md:flex items-center gap-6">
+                <!-- Freelance Status Pill -->
+                <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-white/60">Open for Freelance</span>
+                </div>
+
+                <button class="px-6 py-2 bg-white text-black rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all hover-trigger">
+                    Let's Talk
+                </button>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button onclick="toggleMobileMenu()" class="md:hidden z-[102] relative group w-10 h-10 flex items-center justify-center hover-trigger">
+                <div class="space-y-1.5 p-2">
+                    <span id="bar1" class="block w-6 h-[2px] bg-white transition-all duration-300"></span>
+                    <span id="bar2" class="block w-6 h-[2px] bg-white transition-all duration-300"></span>
+                </div>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 bg-black/98 backdrop-blur-xl z-[101] flex flex-col justify-center items-center gap-8 opacity-0 pointer-events-none transition-all duration-500">
+        <div class="flex flex-col gap-6 text-center">
+            <a href="#archives" onclick="toggleMobileMenu()" class="text-3xl font-black uppercase tracking-tighter hover:text-white/50 transition-colors">Work</a>
+            <a href="#method" onclick="toggleMobileMenu()" class="text-3xl font-black uppercase tracking-tighter hover:text-white/50 transition-colors">Method</a>
+            <a href="#softwares" onclick="toggleMobileMenu()" class="text-3xl font-black uppercase tracking-tighter hover:text-white/50 transition-colors">Toolkit</a>
+            <a href="#about" onclick="toggleMobileMenu()" class="text-3xl font-black uppercase tracking-tighter hover:text-white/50 transition-colors">About</a>
+            <a href="#contact" onclick="toggleMobileMenu()" class="text-3xl font-black uppercase tracking-tighter hover:text-white/50 transition-colors">Contact</a>
+        </div>
+        
+        <!-- MOBILE MENU FREELANCE STATUS -->
+        <div class="flex flex-col items-center gap-6 mt-8">
+            <div class="flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/5">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/60">Open for Freelance</span>
+            </div>
+            <button onclick="toggleMobileMenu(); window.location.href='#contact'" class="px-8 py-4 bg-white text-black rounded-full text-xs font-black uppercase tracking-widest">
+                Start a Project
+            </button>
+        </div>
+    </div>
+
+    <!-- 1. Hero Section -->
+    <section class="relative h-screen flex items-center px-6 md:px-12 overflow-hidden">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#020202] via-[#020202]/40 to-transparent z-10"></div>
+            <video autoplay muted loop playsinline class="w-full h-full object-cover opacity-20 grayscale scale-105">
+                <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-movement-of-fluid-colors-in-a-dark-background-34241-large.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="relative z-20 w-full max-w-[1440px] mx-auto">
+            <!-- Simplified Badge (Removed Freelance from here since it's in Navbar) -->
+            <div class="animate-reveal inline-flex items-center gap-3 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-[9px] uppercase tracking-[0.4em] font-black mb-8">
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                Designer & Editor
+            </div>
+
+            <h1 class="animate-reveal text-[15vw] md:text-[11rem] font-black tracking-tighter uppercase leading-[0.8] mb-10">
+                Visual <br />
+                <span class="text-white/20 italic font-light">Surge.</span>
+            </h1>
+            <div class="animate-reveal-delay-1 flex flex-col md:flex-row md:items-center gap-8 md:gap-16">
+                <p class="max-w-md text-sm md:text-base text-white/40 leading-relaxed font-medium uppercase tracking-wider">
+                    High-end motion systems and strategic graphic identities that command attention.
+                </p>
+                <div class="flex gap-4 items-center">
+                    <a href="#archives" class="group p-5 bg-white text-black rounded-full hover:invert transition-all hover-trigger flex items-center justify-center">
+                        <i data-lucide="play" class="fill-black w-5 h-5"></i>
+                    </a>
+                    <div class="flex flex-col justify-center">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-white/20">Watch the</span>
+                        <span class="text-xs font-bold uppercase tracking-widest">2025 Showreel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Archives Section -->
+    <section id="archives" class="py-16 md:py-20 px-6 md:px-12 max-w-[1440px] mx-auto min-h-screen">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-10">
+            <div>
+                <h2 class="text-6xl md:text-9xl font-black uppercase tracking-tighter animate-on-scroll">Archives</h2>
+                <div class="mt-8 flex gap-2">
+                    <button onclick="switchTab('video')" id="tab-video" class="hover-trigger px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white text-black">
+                        Video Editing
+                    </button>
+                    <button onclick="switchTab('graphic')" id="tab-graphic" class="hover-trigger px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 text-white/40 hover:bg-white/10">
+                        Graphic Design
+                    </button>
+                </div>
+            </div>
+            <div class="hidden lg:block text-right animate-on-scroll delay-200">
+                <div class="text-[10px] font-black uppercase tracking-[0.5em] text-white/20">Archive Filter</div>
+                <div class="text-2xl font-black uppercase italic" id="category-label">Motion</div>
+            </div>
+        </div>
+
+        <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20">
+            <!-- Projects injected via JS -->
+        </div>
+    </section>
+
+    <!-- 3. Method Section -->
+    <section id="method" class="py-16 md:py-20 bg-[#050505] border-y border-white/5">
+        <div class="max-w-[1440px] mx-auto px-6 md:px-12">
+            <!-- Method Header -->
+            <div class="mb-12">
+                <h2 class="text-5xl md:text-8xl font-black uppercase tracking-tighter animate-on-scroll">The <br/> Method</h2>
+                <div class="h-[1px] w-full bg-white/10 mt-8 animate-on-scroll" style="transition-delay: 100ms;"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6" id="methods-grid">
+                <!-- Methods injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Softwares Stack -->
+    <section id="softwares" class="py-12 md:py-16 px-6 md:px-12 max-w-[1440px] mx-auto border-b border-white/5">
+        <div class="mb-8">
+            <span class="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mb-4 block">The Toolkit</span>
+            <h2 class="text-3xl md:text-5xl font-black uppercase tracking-tighter">Professional Stack.</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="software-grid">
+            <!-- Software items injected via JS -->
+        </div>
+    </section>
+
+    <!-- 5. About Section -->
+    <section id="about" class="py-16 md:py-20 px-6 md:px-12 max-w-[1440px] mx-auto">
+        <div class="flex flex-col md:flex-row gap-12 items-center">
+             <div class="w-full md:w-1/2 animate-on-scroll">
+                 <div class="aspect-[3/4] md:aspect-square bg-white/5 rounded-sm overflow-hidden relative group">
+                     <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Profile">
+                     <div class="absolute inset-0 border border-white/10"></div>
+                 </div>
+             </div>
+             <div class="w-full md:w-1/2 animate-on-scroll" style="transition-delay: 100ms;">
+                 <!-- FREELANCE STATUS IN BIO -->
+                 <div class="flex flex-wrap items-center gap-4 mb-6">
+                     <div class="text-[10px] font-black uppercase tracking-[0.5em] text-white/20">The Operator</div>
+                     <div class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-white/60">Open for Freelance</span>
+                    </div>
+                 </div>
+                 
+                 <h2 class="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-8 leading-[0.9]">Obsessed with <br/> the <span class="text-white/40 italic">Details.</span></h2>
+                 <p class="text-white/60 text-sm md:text-base leading-relaxed mb-8">
+                     I don't just edit videos; I engineer attention. With a background in rhythm-based editing and Swiss design principles, I bridge the gap between chaotic creativity and structured storytelling. Every frame serves a purpose.
+                 </p>
+                 <div class="grid grid-cols-2 gap-8 border-t border-white/10 pt-8">
+                     <div>
+                         <div class="text-3xl font-black">5+</div>
+                         <div class="text-[9px] uppercase tracking-widest text-white/40 mt-1">Years Exp.</div>
+                     </div>
+                     <div>
+                         <div class="text-3xl font-black">100+</div>
+                         <div class="text-[9px] uppercase tracking-widest text-white/40 mt-1">Projects</div>
+                     </div>
+                 </div>
+             </div>
+        </div>
+    </section>
+
+    <!-- 6. Footer -->
+    <footer id="contact" class="pt-20 pb-12 px-6 md:px-12 bg-black border-t border-white/10">
+        <div class="max-w-[1440px] mx-auto">
+            <div class="flex flex-col lg:flex-row justify-between items-start gap-12 mb-20">
+                <div class="max-w-3xl">
+                    <h2 class="text-6xl md:text-9xl font-black uppercase tracking-tighter leading-[1.1] mb-8 overflow-visible pb-4">
+                        Elevate <br /> <span class="text-white/10">Everything.</span>
+                    </h2>
+                    <a href="mailto:seth@studio.com" class="text-2xl md:text-5xl font-black hover:text-white/40 transition-all underline decoration-1 underline-offset-8 hover-trigger">
+                        seth@studio.works
+                    </a>
+                </div>
+                
+                <div class="flex gap-12 text-right">
+                    <div class="space-y-4">
+                        <div class="text-[10px] font-black uppercase tracking-widest text-white/20">Connect</div>
+                        <div class="flex flex-col gap-2 text-xs font-bold uppercase tracking-widest">
+                            <a href="#" class="hover:line-through transition-all hover-trigger">Instagram</a>
+                            <a href="#" class="hover:line-through transition-all hover-trigger">Behance</a>
+                            <a href="#" class="hover:line-through transition-all hover-trigger">Vimeo</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] font-black uppercase tracking-[0.5em] text-white/10">
+                <div>© 2025 SETH STUDIO PORTFOLIO</div>
+                <div class="flex gap-8">
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="hover:text-white hover-trigger">Top ↑</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Project Modal -->
+    <div id="project-modal" class="fixed inset-0 z-[1000] flex items-center justify-center p-0 md:p-8 overflow-hidden hidden">
+        <div class="absolute inset-0 bg-black/98 backdrop-blur-3xl animate-fade-in" onclick="closeModal()"></div>
+        
+        <div class="relative w-full max-w-[1200px] h-full md:h-auto max-h-[90vh] bg-[#0a0a0a] md:rounded-xl overflow-y-auto shadow-2xl animate-modal-in border border-white/10 flex flex-col md:flex-row">
+            <button onclick="closeModal()" class="absolute top-8 right-8 z-[2000] w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl hover-trigger">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="w-full md:w-3/5 bg-black relative aspect-video md:aspect-auto border-r border-white/5" id="modal-media-container">
+                <!-- Media injected here -->
+            </div>
+
+            <div class="w-full md:w-2/5 p-12 flex flex-col justify-center">
+                <span id="modal-subtitle" class="text-[10px] font-black uppercase tracking-widest text-white/20 mb-6">Subtitle</span>
+                <h3 id="modal-title" class="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-8 leading-[0.9]">Title</h3>
+                <p id="modal-desc" class="text-white/40 text-sm leading-relaxed mb-12">Description</p>
+                
+                <div class="flex flex-col gap-4">
+                    <button class="w-full py-5 bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] hover:invert transition-all hover-trigger">
+                        Launch Project
+                    </button>
+                    <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white/20 px-2">
+                        <span>Year: 2025</span>
+                        <span id="modal-category">Category: Motion</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Data ---
+        const videoProjects = [
+            {
+                id: 1,
+                title: "SPARKLE & FLOW",
+                subtitle: "3D Motion Reveal",
+                type: "video",
+                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-abstract-movement-of-fluid-colors-in-a-dark-background-34241-large.mp4",
+                image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1200",
+                description: "A high-octane 3D reveal for a luxury beverage brand. Focusing on fluid simulation."
+            },
+            {
+                id: 2,
+                title: "URBAN RHYTHM",
+                subtitle: "Commercial Edit",
+                type: "video",
+                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-city-lights-at-night-with-bokeh-4340-large.mp4",
+                image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200",
+                description: "Fast-cut editing style designed for maximum engagement on high-pacing platforms."
+            }
+        ];
+
+        const graphicProjects = [
+            {
+                id: 3,
+                title: "MINIMALIST REBRAND",
+                subtitle: "Identity Design",
+                type: "graphic",
+                image: "https://images.unsplash.com/photo-1635322966219-b75ed372eb01?auto=format&fit=crop&q=80&w=1200",
+                description: "A comprehensive brand identity for a tech startup focusing on typography and grid systems."
+            },
+            {
+                id: 4,
+                title: "POSTER SERIES",
+                subtitle: "Digital Art",
+                type: "graphic",
+                image: "https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=1200",
+                description: "A series of abstract posters exploring color theory and negative space."
+            }
+        ];
+
+        const softwareStack = [
+            { name: "Adobe Premiere Pro", icon: "film", color: "border-[#9999FF]/30 bg-[#9999FF]/5 text-[#9999FF]" },
+            { name: "Adobe After Effects", icon: "layers", color: "border-[#D199FF]/30 bg-[#D199FF]/5 text-[#D199FF]" },
+            { name: "Adobe Photoshop", icon: "image", color: "border-[#31A8FF]/30 bg-[#31A8FF]/5 text-[#31A8FF]" },
+            { name: "Canva Pro", icon: "palette", color: "border-[#00C4CC]/30 bg-[#00C4CC]/5 text-[#00C4CC]" },
+            { name: "Filmora", icon: "video", color: "border-[#00B4B4]/30 bg-[#00B4B4]/5 text-[#00B4B4]" }
+        ];
+
+        const methods = [
+            { step: "01", title: "The Idea", desc: "Every viral video starts with one clear thought worth stopping for.", icon: "lightbulb", color: "text-amber-400 bg-amber-400/10" },
+            { step: "02", title: "The Plan", desc: "Shots, flow, and message decided before the timeline opens.", icon: "map", color: "text-blue-400 bg-blue-400/10" },
+            { step: "03", title: "The Cut", desc: "Clean, intentional edits that respect attention, not ego.", icon: "scissors", color: "text-rose-400 bg-rose-400/10" },
+            { step: "04", title: "The Feel", desc: "Sound, pacing, and color working together to create emotion.", icon: "music", color: "text-purple-400 bg-purple-400/10" },
+            { step: "05", title: "The Impact", desc: "A video that connects and gets remembered.", icon: "zap", color: "text-emerald-400 bg-emerald-400/10" }
+        ];
+
+        let currentTab = 'video';
+        let isMobileMenuOpen = false;
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderSoftwares();
+            renderMethods();
+            renderProjects();
+            setupObservers();
+            setupCursor();
+            setupHearts();
+            setupScrollNav();
+        });
+
+        // --- Mobile Menu Toggle ---
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const bar1 = document.getElementById('bar1');
+            const bar2 = document.getElementById('bar2');
+            const body = document.body;
+
+            isMobileMenuOpen = !isMobileMenuOpen;
+
+            if (isMobileMenuOpen) {
+                menu.classList.remove('opacity-0', 'pointer-events-none');
+                menu.classList.add('opacity-100', 'pointer-events-auto');
+                bar1.classList.add('rotate-45', 'translate-y-[8px]');
+                bar2.classList.add('-rotate-45', '-translate-y-[8px]');
+                body.style.overflow = 'hidden';
+            } else {
+                menu.classList.add('opacity-0', 'pointer-events-none');
+                menu.classList.remove('opacity-100', 'pointer-events-auto');
+                bar1.classList.remove('rotate-45', 'translate-y-[8px]');
+                bar2.classList.remove('-rotate-45', '-translate-y-[8px]');
+                body.style.overflow = '';
+            }
+        }
+
+        // --- Render Functions ---
+        function renderSoftwares() {
+            const container = document.getElementById('software-grid');
+            container.innerHTML = softwareStack.map((soft, i) => `
+                <div class="p-6 border ${soft.color.split(' ')[0]} ${soft.color.split(' ')[1]} flex flex-col items-center justify-center gap-4 group hover:scale-[1.02] transition-all cursor-default animate-on-scroll" style="transition-delay: ${i * 100}ms">
+                    <div class="scale-125 group-hover:scale-150 transition-transform duration-500 ${soft.color.split(' ')[2]}">
+                        <i data-lucide="${soft.icon}"></i>
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-white/60 text-center">${soft.name}</span>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderMethods() {
+            const container = document.getElementById('methods-grid');
+            container.innerHTML = methods.map((m, i) => `
+                <div class="animate-on-scroll p-8 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] group h-full flex flex-col justify-between transition-all duration-700 hover-trigger" style="transition-delay: ${i * 100}ms">
+                    <div>
+                        <div class="w-12 h-12 ${m.color} flex items-center justify-center rounded-lg mb-10 shadow-xl group-hover:rotate-12 transition-transform">
+                            <i data-lucide="${m.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="text-xl font-black uppercase tracking-tighter mb-4 group-hover:italic transition-all">${m.title}</h4>
+                        <p class="text-[11px] text-white/30 leading-relaxed font-medium">${m.desc}</p>
+                    </div>
+                    <div class="text-[9px] font-black text-white/10 mt-6">${m.step}</div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projects-container');
+            const projects = currentTab === 'video' ? videoProjects : graphicProjects;
+            
+            // Fade out for smooth transition
+            container.style.opacity = '0';
+            
+            setTimeout(() => {
+                container.innerHTML = projects.map((p, i) => {
+                    // Logic for Video vs Graphic
+                    let mediaContent = '';
+                    if (currentTab === 'video') {
+                        // For Video: Show Image by default. On Desktop Hover -> Fade out Image, Play Video.
+                        // On Mobile: Just Show Image.
+                        mediaContent = `
+                            <div class="relative w-full h-full" 
+                                 onmouseenter="playPreview(this)" 
+                                 onmouseleave="stopPreview(this)">
+                                <img src="${p.image}" class="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110 z-10 relative preview-img" alt="${p.title}">
+                                <video muted loop playsinline class="absolute inset-0 w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110 z-0 preview-video hidden md:block">
+                                    <source src="${p.videoUrl}" type="video/mp4">
+                                </video>
+                            </div>
+                        `;
+                    } else {
+                        // For Graphic: Image with smooth scale
+                        mediaContent = `<img src="${p.image}" class="w-full h-full object-cover transform transition-transform duration-700 ease-out group-hover:scale-110" alt="${p.title}">`;
+                    }
+
+                    return `
+                    <div onclick="openModal(${p.id})" class="animate-on-scroll group cursor-pointer hover-trigger ${i % 2 !== 0 ? 'md:mt-32' : ''}">
+                        <div class="relative aspect-video md:aspect-[4/5] overflow-hidden rounded-sm bg-white/5 border border-white/5">
+                            ${mediaContent}
+                            
+                            <!-- 
+                                OPTICAL LENS VIGNETTE OVERLAY
+                                - Radial Gradient: Transparent Center -> Dark Edges
+                                - Edge Blur: Uses mask-image + backdrop-filter to blur only edges
+                            -->
+                            <div class="absolute inset-0 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out bg-[radial-gradient(circle,transparent_50%,rgba(0,0,0,0.6)_100%)]"></div>
+                            
+                            <!-- Separate Blur Layer using Mask (Simulates lens distortion at edges) -->
+                            <div class="absolute inset-0 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-out lens-vignette-mask"></div>
+                            
+                            <!-- View Project Button (Desktop Hover) -->
+                            <div class="absolute inset-0 flex items-center justify-center opacity-0 md:group-hover:opacity-100 transition-all duration-500 z-30 pointer-events-none">
+                                <div class="px-8 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest flex items-center gap-2 scale-90 group-hover:scale-100 transition-all shadow-xl">
+                                    View Project <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Mobile-Only Text Overlay (Always Visible on Mobile, Hidden on Desktop) -->
+                            <div class="absolute bottom-0 left-0 p-6 z-30 md:hidden pointer-events-none">
+                                <div class="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 mb-1">${p.subtitle}</div>
+                                <h3 class="text-2xl font-black uppercase tracking-tighter">${p.title}</h3>
+                            </div>
+                        </div>
+                        
+                        <!-- Desktop Text (Below Image) -->
+                        <div class="mt-8 hidden md:block">
+                            <div class="text-[9px] font-black uppercase tracking-[0.4em] text-white/20 mb-2">${p.subtitle}</div>
+                            <h3 class="text-3xl md:text-5xl font-black uppercase tracking-tighter group-hover:italic transition-all duration-500 hover-trigger">${p.title}</h3>
+                        </div>
+                    </div>
+                `}).join('');
+                
+                lucide.createIcons();
+                setupObservers();
+                
+                container.style.opacity = '1';
+                container.style.transition = 'opacity 0.5s ease';
+            }, 300);
+        }
+
+        // --- Video Preview Logic ---
+        function playPreview(element) {
+            if (window.innerWidth < 768) return; // Disable on mobile
+            const img = element.querySelector('.preview-img');
+            const video = element.querySelector('.preview-video');
+            if(video) {
+                img.style.opacity = '0';
+                video.play();
+            }
+        }
+
+        function stopPreview(element) {
+            if (window.innerWidth < 768) return;
+            const img = element.querySelector('.preview-img');
+            const video = element.querySelector('.preview-video');
+            if(video) {
+                img.style.opacity = '1';
+                video.pause();
+                video.currentTime = 0;
+            }
+        }
+
+        // --- Logic ---
+        function switchTab(tab) {
+            if(currentTab === tab) return;
+            currentTab = tab;
+            
+            const btnVideo = document.getElementById('tab-video');
+            const btnGraphic = document.getElementById('tab-graphic');
+            const label = document.getElementById('category-label');
+
+            if(tab === 'video') {
+                btnVideo.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white text-black hover-trigger";
+                btnGraphic.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 text-white/40 hover:bg-white/10 hover-trigger";
+                label.innerText = "Motion";
+            } else {
+                btnGraphic.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white text-black hover-trigger";
+                btnVideo.className = "px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 text-white/40 hover:bg-white/10 hover-trigger";
+                label.innerText = "Static";
+            }
+
+            renderProjects();
+        }
+
+        function openModal(id) {
+            const project = [...videoProjects, ...graphicProjects].find(p => p.id === id);
+            if(!project) return;
+
+            const modal = document.getElementById('project-modal');
+            const mediaContainer = document.getElementById('modal-media-container');
+            
+            document.getElementById('modal-title').innerText = project.title;
+            document.getElementById('modal-subtitle').innerText = project.subtitle;
+            document.getElementById('modal-desc').innerText = project.description;
+            document.getElementById('modal-category').innerText = `Category: ${project.type === 'video' ? 'Motion' : 'Static'}`;
+
+            if(project.type === 'video') {
+                // Auto-play video with sound enabled logic if desired, keeping muted for safety initially
+                mediaContainer.innerHTML = `<video autoplay controls loop playsinline class="w-full h-full object-cover" src="${project.videoUrl}"></video>`;
+            } else {
+                mediaContainer.innerHTML = `<img src="${project.image}" class="w-full h-full object-cover opacity-80" alt="">`;
+            }
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('project-modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            document.getElementById('modal-media-container').innerHTML = '';
+        }
+
+        function setupObservers() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+        }
+
+        function setupScrollNav() {
+            const nav = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 20) {
+                    nav.classList.add('bg-black/90', 'backdrop-blur-2xl', 'border-b', 'border-white/5');
+                } else {
+                    nav.classList.remove('bg-black/90', 'backdrop-blur-2xl', 'border-b', 'border-white/5');
+                }
+            });
+        }
+
+        function setupCursor() {
+            if (window.matchMedia("(pointer: coarse)").matches) return;
+
+            const cursor = document.getElementById('cursor');
+            const dot = document.getElementById('cursor-dot');
+            const icon = document.getElementById('cursor-icon');
+
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+                
+                const target = e.target;
+                const isClickable = target.closest('a') || target.closest('button') || target.classList.contains('hover-trigger') || target.closest('.hover-trigger');
+
+                if (isClickable) {
+                    // NEW: REMOVED BLUR, KEPT CLEAR LENS
+                    dot.classList.remove('w-4', 'h-4', 'bg-white', 'shadow-[0_0_15px_rgba(255,255,255,0.5)]');
+                    // Reduced size from w-24 h-24 to w-16 h-16
+                    dot.classList.add('w-16', 'h-16', 'bg-white/0', 'border', 'border-white/40', 'shadow-2xl'); 
+                    
+                    // Show icon
+                    icon.classList.remove('hidden', 'opacity-0');
+                    icon.classList.add('opacity-100');
+                } else {
+                    // Revert to dot
+                    dot.classList.add('w-4', 'h-4', 'bg-white', 'shadow-[0_0_15px_rgba(255,255,255,0.5)]');
+                    dot.classList.remove('w-16', 'h-16', 'bg-white/0', 'border', 'border-white/40', 'shadow-2xl');
+                    
+                    // Hide icon
+                    icon.classList.add('hidden', 'opacity-0');
+                    icon.classList.remove('opacity-100');
+                }
+            });
+        }
+
+        function setupHearts() {
+            if (window.matchMedia("(pointer: coarse)").matches) return;
+
+            document.addEventListener('mousedown', (e) => {
+                const container = document.getElementById('particles-container');
+                const heart = document.createElement('div');
+                
+                const size = Math.random() * 10 + 15;
+                const rotation = Math.random() * 40 - 20;
+                
+                heart.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+                
+                heart.style.position = 'absolute';
+                heart.style.left = `${e.clientX}px`;
+                heart.style.top = `${e.clientY}px`;
+                heart.style.setProperty('--rot', `${rotation}deg`);
+                heart.classList.add('animate-heart-float', 'text-rose-500');
+                
+                container.appendChild(heart);
+
+                setTimeout(() => {
+                    heart.remove();
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
